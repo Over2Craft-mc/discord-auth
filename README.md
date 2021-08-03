@@ -34,3 +34,6 @@ You can also use the admin panel to add a navigation button, but it may be a bit
 ###  Register a discord app and fill credentials
 * Register a Discord application here https://discord.com/developers/applications
 * Fill `client_id` and `client_secret` in `plugins/discord-auth/src/Controllers/DiscordAuthHomeController.php`
+
+# Todo 
+* [] Configuration via panel admin
