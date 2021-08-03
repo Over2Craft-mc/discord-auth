@@ -72,12 +72,12 @@ class DiscordAuthHomeController extends Controller
         $guilds = json_decode((string) $response->getBody(), true);
 
         if ($this->guild != '') {
+            $found = false;
             foreach ($guilds as $guild) {
                 if ($guild['id'] == $this->guild) {
+                    $found = true;
                     break;
-                } else {
-                    return view('discord-auth::guild');
-                }
+                } 
             }
         }
 
