@@ -79,7 +79,12 @@ class DiscordAuthHomeController extends Controller
                     break;
                 } 
             }
+            
+            if (!$found) {
+                return view('discord-auth::guild');
+            }
         }
+        
 
         /** @var Collection $users */
         $users = User::where('game_id', 'discord' . $user->user['id'])->get();
