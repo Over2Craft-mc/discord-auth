@@ -1,0 +1,14 @@
+{
+    "id": "discord-auth",
+    "name": "discord-auth",
+    "description": "Plugin for Azuriom",
+    "version": "1.0.0",
+    "url": "https://azuriom.com",
+    "authors": [
+        "Azuriom"
+    ],
+    "providers": [
+        "\\Azuriom\\Plugin\\DiscordAuth\\Providers\\DiscordAuthServiceProvider",
+        "\\Azuriom\\Plugin\\DiscordAuth\\Providers\\RouteServiceProvider"
+    ]
+}
