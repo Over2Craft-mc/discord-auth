@@ -35,5 +35,8 @@ You can also use the admin panel to add a navigation button, but it may be a bit
 * Register a Discord application here https://discord.com/developers/applications
 * Fill `client_id` and `client_secret` in `plugins/discord-auth/src/Controllers/DiscordAuthHomeController.php`
 
+### Update depedencies
+`composer require martinbean/socialite-discord-provider:^1.2`
+
 # Todo 
 * [ ] Configuration via panel admin
