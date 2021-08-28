@@ -1,6 +1,7 @@
 <?php
 
 use Azuriom\Plugin\DiscordAuth\Controllers\Admin\AdminController;
+use Azuriom\Plugin\DiscordAuth\Controllers\Admin\SettingsController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -15,4 +16,7 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::get('/', [AdminController::class, 'index']);
+Route::middleware('can:discord-auth.admin')->group(function () {
+    Route::get('/settings', [SettingsController::class, 'show'])->name('settings');
+    Route::post('/settings', [SettingsController::class, 'save'])->name('settings.save');
+});

@@ -3,7 +3,8 @@
 namespace Azuriom\Plugin\DiscordAuth\Controllers;
 
 use Azuriom\Http\Controllers\Controller;
-use Azuriom\Models\User;
+use Azuriom\Plugin\DiscordAuth\Models\Discord;
+use Azuriom\Plugin\DiscordAuth\Models\User;
 use Azuriom\Rules\GameAuth;
 use Azuriom\Rules\Username;
 use GuzzleHttp\Client;
@@ -23,10 +24,10 @@ class DiscordAuthHomeController extends Controller
     private $guild;
 
     public function __construct() {
-        config(["services.discord.client_id" => ""]);
-        config(["services.discord.client_secret" => ""]);
+        config(["services.discord.client_id" => setting('discord-auth.client_id', '')]);
+        config(["services.discord.client_secret" => setting('discord-auth.client_secret', '')]);
         config(["services.discord.redirect_id" => "/discord-auth/callback"]);
-        $this->guild = 'tt';
+        $this->guild = setting('discord-auth.guild', '');
     }
 
     public function username() {
@@ -65,6 +66,7 @@ class DiscordAuthHomeController extends Controller
      */
     public function handleProviderCallback(Request $request)
     {
+
         $user = Socialite::driver('discord')->user();
 
         $client = new Client();
@@ -77,44 +79,58 @@ class DiscordAuthHomeController extends Controller
                 if ($guild['id'] == $this->guild) {
                     $found = true;
                     break;
-                } 
+                }
             }
-            
+
             if (!$found) {
                 return view('discord-auth::guild');
             }
         }
-        
 
         /** @var Collection $users */
-        $users = User::where('game_id', 'discord' . $user->user['id'])->get();
+        //$users = User::with('discord')->where('discord_id', $user->user['id'])->get();
+        $discords = Discord::where('discord_id', $user->user['id'])->orderByDesc('id')->get();
 
-        if ($users->isEmpty()) {
-            $user = User::forceCreate([
-                'name' => $user->user['id'],
+        $created = false;
+
+        if (
+            $discords->isEmpty() ||
+            (!$discords->isEmpty() && ($userToLogin = $discords->first()->user()->get()->first())->is_deleted) // Recreate account if it has been deleted
+        ){
+
+            $created = true;
+
+            $discordId = $user->user['id'];
+
+            /** @var User $user */
+            $userToLogin = User::forceCreate([
+                'name' => $discordId,
                 'email' => $user->user['email'],
                 'password' => Hash::make(Str::random(32)),
-                'game_id' => 'discord' . $user->user['id'],
                 'last_login_ip' => $request->ip(),
                 'last_login_at' => now(),
             ]);
-        } else {
-            $user = $users->first();
+
+            $discord = new Discord();
+            $discord->discord_id = $discordId;
+            $discord->user_id = $userToLogin->id;
+            $discord->save();
+
         }
 
-        if ($user->isBanned()) {
+        if ($userToLogin->isBanned()) {
             throw ValidationException::withMessages([
                 'email' => trans('auth.suspended'),
             ])->redirectTo(URL::route('login'));
         }
 
-        if (setting('maintenance-status', false) && ! $user->can('maintenance.access')) {
+        if (setting('maintenance-status', false) && ! $userToLogin->can('maintenance.access')) {
             return $this->sendMaintenanceResponse($request);
         }
 
-        $this->guard()->login($user);
+        $this->guard()->login($userToLogin);
 
-        if ($users->isEmpty()) {
+        if ($created) {
             return redirect()->route('discord-auth.username');
         }
 

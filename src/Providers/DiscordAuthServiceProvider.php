@@ -3,6 +3,12 @@
 namespace Azuriom\Plugin\DiscordAuth\Providers;
 
 use Azuriom\Extensions\Plugin\BasePluginServiceProvider;
+use Azuriom\Models\Permission;
+use Illuminate\Contracts\Foundation\Application;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Str;
+use Laravel\Socialite\Facades\Socialite;
+use MartinBean\Laravel\Socialite\DiscordProvider;
 
 class DiscordAuthServiceProvider extends BasePluginServiceProvider
 {
@@ -48,8 +54,7 @@ class DiscordAuthServiceProvider extends BasePluginServiceProvider
     public function register()
     {
         $this->registerMiddlewares();
-
-        //
+        require_once __DIR__.'/../../vendor/autoload.php';
     }
 
     /**
@@ -59,7 +64,19 @@ class DiscordAuthServiceProvider extends BasePluginServiceProvider
      */
     public function boot()
     {
-        // $this->registerPolicies();
+        Socialite::extend('discord', function (Application $app) {
+            $config = $app->make('config')->get('services.discord');
+
+            $redirect = value(Arr::get($config, 'redirect'));
+
+            return new DiscordProvider (
+                $app->make('request'),
+                $config['client_id'],
+                $config['client_secret'],
+                Str::startsWith($redirect, '/') ? $app->make('url')->to($redirect) : $redirect,
+                Arr::get($config, 'guzzle', [])
+            );
+        });
 
         $this->loadViews();
 
@@ -73,7 +90,9 @@ class DiscordAuthServiceProvider extends BasePluginServiceProvider
 
         $this->registerUserNavigation();
 
-        //
+        Permission::registerPermissions([
+            'discord-auth.admin' => 'discord-auth::admin.permission',
+        ]);
     }
 
     /**
@@ -84,7 +103,7 @@ class DiscordAuthServiceProvider extends BasePluginServiceProvider
     protected function routeDescriptions()
     {
         return [
-            //
+            'discord-auth.index' => 'discord-auth::messages.plugin_name',
         ];
     }
 
@@ -96,7 +115,12 @@ class DiscordAuthServiceProvider extends BasePluginServiceProvider
     protected function adminNavigation()
     {
         return [
-            //
+            'discord-auth' => [
+                'name' => 'discord-auth::admin.nav.title',
+                'icon' => 'fas fa-hammer',
+                'route' => 'discord-auth.admin.settings',
+                'permission' => 'discord-auth.admin'
+            ],
         ];
     }
 
