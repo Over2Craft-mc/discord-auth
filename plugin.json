@@ -9,6 +9,6 @@
     ],
     "providers": [
         "\\Azuriom\\Plugin\\DiscordAuth\\Providers\\DiscordAuthServiceProvider",
-        "\\Azuriom\\Plugin\\DiscordAuth\\Providers\\RouteServiceProvider",
+        "\\Azuriom\\Plugin\\DiscordAuth\\Providers\\RouteServiceProvider"
     ]
 }
