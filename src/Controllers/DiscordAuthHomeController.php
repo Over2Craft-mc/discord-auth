@@ -8,7 +8,6 @@ use Azuriom\Plugin\DiscordAuth\Models\User;
 use Azuriom\Rules\GameAuth;
 use Azuriom\Rules\Username;
 use GuzzleHttp\Client;
-use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -61,7 +60,7 @@ class DiscordAuthHomeController extends Controller
     /**
      * Obtain the user information from Discord.
      *
-     * @return \Illuminate\Http\Response|\Illuminate\Http\RedirectResponse
+     * @return \Illuminate\Contracts\Foundation\Application|\Illuminate\Contracts\View\Factory|\Illuminate\Contracts\View\View|\Illuminate\Http\RedirectResponse|\Illuminate\Http\Response
      * @throws ValidationException
      */
     public function handleProviderCallback(Request $request)
@@ -87,35 +86,42 @@ class DiscordAuthHomeController extends Controller
             }
         }
 
-        /** @var Collection $users */
-        //$users = User::with('discord')->where('discord_id', $user->user['id'])->get();
-        $discords = Discord::where('discord_id', $user->user['id'])->orderByDesc('id')->get();
 
+        $discordId = $user->user['id'];
+        $email = $user->user['email'];
         $created = false;
 
-        if (
-            $discords->isEmpty() ||
-            (!$discords->isEmpty() && ($userToLogin = $discords->first()->user()->get()->first())->is_deleted) // Recreate account if it has been deleted
-        ){
+        $discords = Discord::with('user')->where('discord_id', $discordId)->orderByDesc('id')->get();
 
-            $created = true;
+        if ($discords->isEmpty() || $discords->first()->user->is_deleted) { // Aucun compte discord n'existe
 
-            $discordId = $user->user['id'];
+            if (Auth::guest() && User::where('email', $email)->exists()) {
+                $redirect = redirect();
+                $redirect->setIntendedUrl(route('discord-auth.login'));
+                return $redirect
+                    ->route('login')
+                    ->with('error', trans('discord-auth::messages.email_already_exists'));
+            } elseif (Auth::user()) {
+                $userToLogin = Auth::user();
+            } else {
+                $userToLogin = User::forceCreate([
+                    'name' => $discordId,
+                    'email' => $email,
+                    'password' => Hash::make(Str::random(32)),
+                    'last_login_ip' => $request->ip(),
+                    'last_login_at' => now(),
+                ]);
 
-            /** @var User $user */
-            $userToLogin = User::forceCreate([
-                'name' => $discordId,
-                'email' => $user->user['email'],
-                'password' => Hash::make(Str::random(32)),
-                'last_login_ip' => $request->ip(),
-                'last_login_at' => now(),
-            ]);
+                $created = true;
+            }
 
             $discord = new Discord();
             $discord->discord_id = $discordId;
             $discord->user_id = $userToLogin->id;
             $discord->save();
 
+        } else {
+            $userToLogin = $discords->first()->user;
         }
 
         if ($userToLogin->isBanned()) {
