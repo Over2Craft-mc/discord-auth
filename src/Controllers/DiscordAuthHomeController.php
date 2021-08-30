@@ -7,11 +7,11 @@ use Azuriom\Plugin\DiscordAuth\Models\Discord;
 use Azuriom\Plugin\DiscordAuth\Models\User;
 use Azuriom\Rules\GameAuth;
 use Azuriom\Rules\Username;
-use GuzzleHttp\Client;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -57,35 +57,42 @@ class DiscordAuthHomeController extends Controller
             ->scopes('guilds')->redirect();
     }
 
+    private function hasRightGuild($guilds) {
+
+        if ($this->guild == '') {
+            return true;
+        }
+
+        $found = false;
+        foreach ($guilds as $guild) {
+            if ($guild['id'] == $this->guild) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     /**
      * Obtain the user information from Discord.
      *
      * @return \Illuminate\Contracts\Foundation\Application|\Illuminate\Contracts\View\Factory|\Illuminate\Contracts\View\View|\Illuminate\Http\RedirectResponse|\Illuminate\Http\Response
      * @throws ValidationException
+     * @throws \Illuminate\Http\Client\RequestException
      */
     public function handleProviderCallback(Request $request)
     {
 
         $user = Socialite::driver('discord')->user();
 
-        $client = new Client();
-        $response = $client->send(new \GuzzleHttp\Psr7\Request('GET', 'https://discord.com/api/users/@me/guilds', ['Authorization' => 'Bearer ' . $user->token]));
-        $guilds = json_decode((string) $response->getBody(), true);
+        $guilds = Http::withToken($user->token)
+            ->get('https://discord.com/api/users/@me/guilds')
+            ->throw()
+            ->json();
 
-        if ($this->guild != '') {
-            $found = false;
-            foreach ($guilds as $guild) {
-                if ($guild['id'] == $this->guild) {
-                    $found = true;
-                    break;
-                }
-            }
-
-            if (!$found) {
-                return view('discord-auth::guild');
-            }
+        if (!$this->hasRightGuild($guilds)) {
+            return view('discord-auth::guild');
         }
-
 
         $discordId = $user->user['id'];
         $email = $user->user['email'];
