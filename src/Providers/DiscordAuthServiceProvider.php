@@ -4,8 +4,11 @@ namespace Azuriom\Plugin\DiscordAuth\Providers;
 
 use Azuriom\Extensions\Plugin\BasePluginServiceProvider;
 use Azuriom\Models\Permission;
+use Azuriom\Plugin\DiscordAuth\Models\Discord;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Str;
 use Laravel\Socialite\Facades\Socialite;
 use MartinBean\Laravel\Socialite\DiscordProvider;
@@ -64,6 +67,10 @@ class DiscordAuthServiceProvider extends BasePluginServiceProvider
      */
     public function boot()
     {
+
+        Blade::if('hasDiscordLinked', $this->bladeHasDiscordLinked());
+        Blade::if('hasNotDiscordLinked', $this->bladeHasNotDiscordLinked());
+
         Socialite::extend('discord', function (Application $app) {
             $config = $app->make('config')->get('services.discord');
 
@@ -134,5 +141,29 @@ class DiscordAuthServiceProvider extends BasePluginServiceProvider
         return [
             //
         ];
+    }
+
+    private function bladeHasDiscordLinked()
+    {
+        return function () {
+
+            if (Auth::guest()) {
+                return false;
+            }
+
+            return Discord::where('user_id', Auth::user()->id)->exists();
+        };
+    }
+
+    private function bladeHasNotDiscordLinked()
+    {
+        return function () {
+
+            if (Auth::guest()) {
+                return true;
+            }
+
+            return !Discord::where('user_id', Auth::user()->id)->exists();
+        };
     }
 }
