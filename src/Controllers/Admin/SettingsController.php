@@ -13,7 +13,7 @@ class SettingsController extends Controller
      *
      * @return \Illuminate\Contracts\Foundation\Application|\Illuminate\Contracts\View\Factory|\Illuminate\Contracts\View\View|\Illuminate\Http\Response
      */
-    public function show()
+    public function show(): \Illuminate\Contracts\View\View|\Illuminate\Contracts\View\Factory|\Illuminate\Http\Response|\Illuminate\Contracts\Foundation\Application
     {
         return view('discord-auth::admin.settings', [
             'client_id' => setting('discord-auth.client_id', ''),
@@ -22,7 +22,10 @@ class SettingsController extends Controller
         ]);
     }
 
-    public function save(Request $request)
+    /**
+     * @throws \Illuminate\Validation\ValidationException
+     */
+    public function save(Request $request): \Illuminate\Http\RedirectResponse
     {
         $validated = $this->validate($request, [
             'client_id' => ['required', 'string', 'max:255'],
