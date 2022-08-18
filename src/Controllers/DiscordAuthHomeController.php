@@ -152,7 +152,7 @@ class DiscordAuthHomeController extends Controller
             return $this->sendMaintenanceResponse($request);
         }
 
-        $this->guard()->login($userToLogin);
+        $this->guard()->login($userToLogin, true);
 
         if ($created) {
             return redirect()->route('discord-auth.username');
