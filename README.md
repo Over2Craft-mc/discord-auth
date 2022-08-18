@@ -28,3 +28,4 @@ Go to `plugin/discord-auth` and run `composer update`
 
 # Todo 
 * [x] Configuration via panel admin
+* [] Gerer la connection depuis le profil
