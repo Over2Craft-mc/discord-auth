@@ -20,7 +20,7 @@ class DiscordAuthServiceProvider extends BasePluginServiceProvider
      *
      * @var array
      */
-    protected $middleware = [
+    protected array $middleware = [
         // \Azuriom\Plugin\DiscordAuth\Middleware\ExampleMiddleware::class,
     ];
 
@@ -29,14 +29,14 @@ class DiscordAuthServiceProvider extends BasePluginServiceProvider
      *
      * @var array
      */
-    protected $middlewareGroups = [];
+    protected array $middlewareGroups = [];
 
     /**
      * The plugin's route middleware.
      *
      * @var array
      */
-    protected $routeMiddleware = [
+    protected array $routeMiddleware = [
         // 'example' => \Azuriom\Plugin\DiscordAuth\Middleware\ExampleRouteMiddleware::class,
     ];
 
@@ -45,7 +45,7 @@ class DiscordAuthServiceProvider extends BasePluginServiceProvider
      *
      * @var array
      */
-    protected $policies = [
+    protected array $policies = [
         // User::class => UserPolicy::class,
     ];
 

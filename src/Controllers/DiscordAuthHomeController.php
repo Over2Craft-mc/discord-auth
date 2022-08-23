@@ -7,8 +7,15 @@ use Azuriom\Plugin\DiscordAuth\Models\Discord;
 use Azuriom\Plugin\DiscordAuth\Models\User;
 use Azuriom\Rules\GameAuth;
 use Azuriom\Rules\Username;
+use Illuminate\Contracts\Auth\StatefulGuard;
+use Illuminate\Contracts\Foundation\Application;
+use Illuminate\Contracts\View\Factory;
+use Illuminate\Contracts\View\View;
+use Illuminate\Http\Client\RequestException;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
@@ -20,7 +27,7 @@ use Laravel\Socialite\Facades\Socialite;
 class DiscordAuthHomeController extends Controller
 {
 
-    private $guild;
+    private mixed $guild;
 
     public function __construct() {
         config(["services.discord.client_id" => setting('discord-auth.client_id', '')]);
@@ -29,11 +36,13 @@ class DiscordAuthHomeController extends Controller
         $this->guild = setting('discord-auth.guild', '');
     }
 
-    public function username() {
+    public function username(): Factory|View|Application
+    {
         return view('discord-auth::username', ['conditions' => setting('conditions')]);
     }
 
-    public function registerUsername(Request $request) {
+    public function registerUsername(Request $request): RedirectResponse
+    {
 
         $request->validate([
             'name' => ['required', 'string', 'max:25', 'unique:users', new Username(), new GameAuth()]
@@ -49,15 +58,16 @@ class DiscordAuthHomeController extends Controller
     /**
      * Redirect the user to the Discord authentication page.
      *
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
-    public function redirectToProvider()
+    public function redirectToProvider(): Response
     {
         return Socialite::driver('discord')
             ->scopes('guilds')->redirect();
     }
 
-    private function hasRightGuild($guilds) {
+    private function hasRightGuild($guilds): bool
+    {
 
         if ($this->guild == '') {
             return true;
@@ -76,11 +86,12 @@ class DiscordAuthHomeController extends Controller
     /**
      * Obtain the user information from Discord.
      *
-     * @return \Illuminate\Contracts\Foundation\Application|\Illuminate\Contracts\View\Factory|\Illuminate\Contracts\View\View|\Illuminate\Http\RedirectResponse|\Illuminate\Http\Response
+     * @param Request $request
+     * @return View|Factory|Response|JsonResponse|RedirectResponse|Application
+     * @throws RequestException
      * @throws ValidationException
-     * @throws \Illuminate\Http\Client\RequestException
      */
-    public function handleProviderCallback(Request $request)
+    public function handleProviderCallback(Request $request): View|Factory|Response|JsonResponse|RedirectResponse|Application
     {
 
         $user = Socialite::driver('discord')->user();
@@ -153,10 +164,10 @@ class DiscordAuthHomeController extends Controller
     /**
      * Send the response after the user was authenticated.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\RedirectResponse|\Illuminate\Http\JsonResponse
+     * @param Request $request
+     * @return RedirectResponse|JsonResponse
      */
-    protected function sendLoginResponse(Request $request)
+    protected function sendLoginResponse(Request $request): JsonResponse|RedirectResponse
     {
         $request->session()->regenerate();
 
@@ -174,10 +185,10 @@ class DiscordAuthHomeController extends Controller
     /**
      * Get the maintenance response.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\RedirectResponse
+     * @param Request $request
+     * @return JsonResponse
      */
-    protected function sendMaintenanceResponse(Request $request)
+    protected function sendMaintenanceResponse(Request $request): JsonResponse
     {
         if ($request->expectsJson()) {
             return response()->json(['message' => trans('auth.maintenance')], 503);
@@ -189,7 +200,7 @@ class DiscordAuthHomeController extends Controller
     /**
      * Get the guard to be used during authentication.
      *
-     * @return \Illuminate\Contracts\Auth\StatefulGuard
+     * @return StatefulGuard
      */
     protected function guard()
     {

@@ -16,7 +16,8 @@ use Illuminate\Database\Eloquent\Model;
 class Discord extends Model
 {
 
-    public function user() {
+    public function user(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
         return $this->belongsTo(User::class);
     }
 }

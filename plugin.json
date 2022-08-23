@@ -5,8 +5,10 @@
     "version": "1.3.0",
     "url": "https://azuriom.com",
     "authors": [
-        "Azuriom"
+        "Azuriom",
+        "FullGreen"
     ],
+    "azuriom_api": "1.0.0",
     "providers": [
         "\\Azuriom\\Plugin\\DiscordAuth\\Providers\\DiscordAuthServiceProvider",
         "\\Azuriom\\Plugin\\DiscordAuth\\Providers\\RouteServiceProvider"
